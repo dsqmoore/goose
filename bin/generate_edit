@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby -wKU
+
+require "erb"
+
+PAGE_NAME       = ARGV.shift
+
+page_name       = PAGE_NAME
+page_file       = PAGE_NAME
+page_title      = page_name.gsub(/_/, ' ').gsub(/\w+/) { |m| m.capitalize }
+css_files       = []
+js_files        = []
+
+def expand(template_name, binding)
+	path = File.dirname(__FILE__) + '/../templates/' + template_name + '.rhtml'
+	ERB.new(File.read(path), 0, '%-<>').result(binding)
+end
+
+STDOUT << expand('header', binding)
+STDOUT << "<form action='update_page' method='POST' accept-charset='utf-8'><textarea name='content'>"
+STDOUT << STDIN.read.gsub(/&/, '&amp;').gsub(/</, '&lt;')
+STDOUT << "</textarea><br>\n<input type='hidden' name='file' value='#{PAGE_NAME}'><input type='text' name='log' value='Log entry'>\n<input type='submit' value='Update Page'></form>\n"
+STDOUT << expand('footer', binding)

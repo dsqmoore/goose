@@ -1,0 +1,32 @@
+# Introduction
+
+Goose is a wiki with the following key features:
+
+ * Pages are in RFC822-style and stored in a git repository.
+ * Static HTML is created from the page-store via `make`.
+ * HTTP authentication is used to restrict editing (and access to the “raw source”).
+ 
+# Install
+
+It should be enough to run `make` in the base directory. This will do two things:
+
+ 1. Create `pages` which is a copy of `factory` but initialized as a new git repository. It expands `${BASE}` in `pages/edit/.htaccess`. If you later move Goose then you need to update that path.
+ 2. Create `html` which is created using the filters in `filter` and templates in `templates`. Those are the pages you want to make your document root.
+ 
+Running `make` again will update `html` to reflect changes in your page store (`pages`).
+
+The default user in `.htdigest` has username/password `test`/`test`.
+
+# Operation
+
+All pages are static except `html/edit/update_page.php`. This script will update the page store (`pages`) by overwriting the page edited, commit it (via `git`) and call `make` to update the HTML version of the page store.
+
+For this to work your web server must be able to execute shell commands, have access to git, and the page store should be owned by the user who runs the PHP script.
+
+# Why Static Pages
+
+Besides the performance gain it allows us to make **all** content editable. For example `css/main.css` can be edited simply by prefixing the URL with `edit/` so it becomes `edit/css/main.css`.
+
+Of course this is also very dangerous if access restrictions are not setup properly, especially since this is geared toward allowing PHP in the pages; in the page store name the page `«name».php.page` and it will end up as `«name».php`. It will go through the filters, though with PHP blocks preserved (look at `bin/generate_page` for details) and with PHP above the RFC822-style headers inserted before the header template (this makes it possible to use `header()` or similar in your pages).
+
+So actually… I started to say this is a wiki system, but really, it is (going to be) a system for small sites where the site operator can edit any file either online (by prefixing the URL with `edit/`) or offline, with pages stored in a git repository, and with majority of pages written in the simple to read, simple to write, Markdown format, oh, and with extra filters applied to the pages such as the current `200 hide emails` filter (whcih replace email addresses with JavaScript).

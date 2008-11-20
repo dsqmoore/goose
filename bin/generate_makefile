@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby -wKU
+
+require "fileutils"
+
+TEMPLATES = Dir.glob('templates/*').join(' ')
+
+STDOUT << "default: all\n\n"
+STDOUT << ".PHONY: default all\n\n"
+
+targets = []
+src_dirs = [ 'pages' ]
+
+Dir.glob('pages/**/{*.*,.ht*}').each do |src|
+	dst = src.sub(/\Apages(?=\/)/, 'html').sub(/\.php\.page\z/, '.php').sub(/\.page\z/, '.html')
+	dst_edit = src.sub(/\Apages(?=\/)/, 'html/edit').sub(/\.php\.page\z/, '.php').sub(/\.page\z/, '.html')
+	dir = File.split(dst).first
+	dir_edit = File.split(dst_edit).first
+
+	FileUtils.mkdir_p(dir) unless File.directory? dir
+	FileUtils.mkdir_p(dir_edit) unless File.directory? dir_edit
+	src_dirs << File.dirname(src)
+
+	STDOUT << "#{dst}: #{src}"
+	if src =~ /\.(page)$/
+		name = File.split(src).last.sub(/\..+$/, '')
+		STDOUT << " #{TEMPLATES} bin/generate_page\n\tbin/generate_page < $< > $@ #{name}\n\n"
+		STDOUT << "#{dst_edit}: #{src} #{TEMPLATES} bin/generate_edit\n\tbin/generate_edit < $< > $@ #{name}\n\n"
+		targets << dst_edit
+	else
+		name = File.split(src).last.sub(/\..+$/, '')
+		STDOUT << "\n\tcp -p $< $@\n\n"
+		dst_edit += '.html'
+		STDOUT << "#{dst_edit}: #{src} #{TEMPLATES} bin/generate_edit\n\tbin/generate_edit < $< > $@ #{name}\n\n"
+		targets << dst_edit
+	end
+
+	targets << dst
+end
+
+STDOUT << "all: " << targets.join(' ') << "\n\n"
+
+STDOUT << "cache/Makefile: bin/generate_makefile " << src_dirs.sort.uniq.join(' ') << "\n\n"

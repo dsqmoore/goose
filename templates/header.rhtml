@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+	"http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<link rel="stylesheet" type="text/css" href="/css/main.css">
+	<%- css_files.each do |css| -%>
+	<link rel="stylesheet" type="text/css" href="<%= css %>" charset="utf-8">
+	<%- end -%>
+	<%- js_files.each do |js| -%>
+	<script type="text/javascript" src="<%= js %>" charset="utf-8"></script>
+	<%- end -%>
+	<title><%= page_title %></title>
+</head>
+
+<body id="<%= page_name %>">
+
+	<div id="header">
+		<h1>Git + Make + Mardown + Digest Auth = Wiki</h1>
+	</div>
+
+	<div id="container">
+		<div id="content">
+			

@@ -1,0 +1,9 @@
+AuthType             Digest
+AuthName             "An account is required to edit pages"
+AuthDigestDomain     /edit
+
+AuthDigestProvider   file
+AuthUserFile         ${BASE}/html/edit/.htdigest
+
+Require valid-user
+

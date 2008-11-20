@@ -1,0 +1,79 @@
+/* ===================================== */
+/* = Design/CSS from http://pastie.org = */
+/* ===================================== */
+
+body {
+	margin: 0;
+	padding: 0;
+	background: #d7d7d7;
+	font: 12px Verdana, Helvetica, sans-serif;
+}
+
+#header {
+	background: #111;
+	padding: 5px 4% 10px;
+	border-bottom: 3px solid #999;
+}
+
+#header h1 {
+	font-weight: normal;
+	margin: 0;
+	color: #fc4;
+}
+
+#navigation {
+	float: left;
+	width: 20%;
+	margin-top: 1em;
+	margin-left: 1.25em;
+}
+
+#container {
+	width: 92%;
+	margin: 0 auto;
+	min-width: 760px;
+}
+
+#content {
+	position: relative;
+	margin: 1em 0;
+	width: 70%;
+	background: white;
+	padding: 25px;
+	border: 5px solid #bbb;
+	border-width: 0 4px 4px 0;
+	float: left;
+	min-width: 450px;
+	min-height: 200px;
+
+	border-left: 1px solid #ccc;
+	border-top: 1px solid #ccc;
+}
+
+#content > h1 {
+	margin-top: 0;
+}
+
+#content > p {
+	margin-top: 0;
+}
+
+#content > p + p {
+	margin-top: inherit;
+}
+
+/* ============== */
+/* = Navigation = */
+/* ============== */
+
+#main      #navi_main      { font-weight: bold; }
+#main      #navi_main      a { text-decoration: none; }
+
+/* ======== */
+/* = Edit = */
+/* ======== */
+
+textarea {
+	width: 90%;
+	height: 500px;
+}

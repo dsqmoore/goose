@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby -wKU
+
+require "erb"
+
+def expand(template_name, binding)
+	path = File.dirname(__FILE__) + '/../templates/' + template_name + '.rhtml'
+	ERB.new(File.read(path), 0, '%-<>').result(binding)
+end
+
+PAGE_NAME       = ARGV.shift
+FILTERS         = Dir.glob('filters/*').map { |e| "|'#{e}'" }.join
+MARK            = [0xFFFC].pack("U").freeze
+
+php, head, body = STDIN.read.scan(/\A((?:<\?php(?m:.*?)\?>\s*)*)((?:^\w+:\s+.*$\n)*)\n?((?m:.*))\z/).flatten
+tmp             = head.scan(/^(\w+):\s+(.*)$/).collect { |pair| [pair[0].downcase, pair[1].strip] }
+headers         = Hash[*tmp.flatten]
+
+page_name       = headers['name'] || PAGE_NAME
+page_file       = PAGE_NAME
+page_title      = headers['title'] || page_name.gsub(/_/, ' ').gsub(/\w+/) { |m| m.capitalize }
+css_files       = headers['css'].to_s.split(/,\s*/)
+js_files        = headers['js'].to_s.split(/,\s*/)
+
+php_blocks = []
+body.gsub!(/<\?(=|php).*?\?>/m) { "#{MARK}%d#{MARK}" % ((php_blocks << $&).size-1) }
+body = open(FILTERS, 'r+') { |io| io << body; io.close_write; io.read }
+body.gsub!(/#{MARK}(\d+)#{MARK}/) { php_blocks[$1.to_i] }
+
+STDOUT << php
+STDOUT << expand('header', binding)
+STDOUT << body
+STDOUT << expand('footer', binding)

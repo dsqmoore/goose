@@ -1,0 +1,131 @@
+#!/usr/bin/env ruby -wKU
+
+EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
+
+module HTML
+  class Node
+    include Enumerable
+    
+    def initialize
+      @children = [ ]
+    end
+
+    def <<(child)
+      @children << child
+    end
+
+    def self.prune=(flag)
+      @@prune = flag
+    end
+
+    def each(&block)
+      @@prune = false   if     self.class == Node
+      block.call(self)  unless self.class == Node
+      @children.any? { |e| e.each(&block) } unless @@prune
+      res = @@prune
+      @@prune = false
+      res
+    end
+  end
+
+  class Tag < Node
+    attr_writer :close_tag # TODO we should raise if an unexpected end tag is provided
+    attr_reader :args
+    def initialize(tag)
+      super()
+      @open_tag, @close_tag = tag, ''
+
+      args = tag.gsub(/^<[a-z0-9]+\s*|\s*>$/i, '')
+      @args = Hash[*args.scan(/([a-z0-9]+)\s*=\s*("(?:[^<"]+|<\?.*?\?>)*?"|'(?:[^<']+|<\?.*?\?>)*?')/m).flatten]
+    end
+
+    def each(&block)
+      unless super(&block)
+        block.call(@close_tag) unless @@prune
+      end
+    end
+
+    def tag
+      $&.downcase if @open_tag =~ /[a-z0-9]+/i
+    end
+
+    def to_s
+      @open_tag
+    end
+  end
+
+  class Text < Node
+    def initialize(text)
+      super()
+      @text = text
+    end
+
+    def to_s
+      @text
+    end
+  end
+
+  module_function
+
+  # Input:  an IO object that holds an HTML page optionally with <% script %> <?php tags ?> (this is why an off-the-shelves parser was no good)
+  # Output: a Node object implementing the Enumerable interface (this node is the root of the tree representing the parsed page)
+  # the parser is regexp-based so not overly robust
+  def parse(io)
+    # TODO handle XHTML
+    # TODO support <div arg="<% … %>"> (we presently only support <? … ?>)
+    pattern = /
+          ( <(?:br|hr|img|meta|link|input|base|area|col|frame|param)\b[^>]*> ) # single tag
+        | ( <    [a-z0-9]+ (?: [^<>]+ | <\?.*?\?> )* > )                       # open tag
+        | ( < \/ [a-z0-9]+ [^>]* > )                                           # close tag
+        | ( [^<]+ )                                                            # text
+        | ( <!DOCTYPE\b [^>]* > | <!--.*?--> | <\?.*?\?> | <%.*?%> )           # stuff to preserve
+      /xmi
+
+    stack = [ Node.new ]
+    io.read.scan(pattern) do |m|
+      if single_tag = m[0]
+        stack[-1] << Tag.new(single_tag)
+      elsif start_tag = m[1]
+        stack.push(Tag.new(start_tag))
+        stack[-2] << stack[-1]
+      elsif close_tag = m[2]
+        raise "Close tag found but no tags are open" if stack.size == 0
+        stack[-1].close_tag = close_tag
+        stack.pop
+      elsif text = m[3]
+        stack[-1] << Text.new(text)
+      elsif preserve = m[4]
+        stack[-1] << Text.new(preserve)
+      else
+        raise "Unhandled construct: " + m[5].split("\n").first
+      end
+    end
+    raise "Reaching end of document with unclosed tags (#{stack[1..-1].join(", ")})" unless stack.size == 1
+    stack.first
+  end
+end
+
+def e_js(str)
+  str.gsub(/(?=[\\"])/, '\\').gsub(/\n/, '\n').gsub(/[@.\/]/) { |ch| sprintf('\\%03o', ch[0]) }
+end
+
+def rot_13(str)
+  str.tr('A-Za-z', 'N-ZA-Mn-za-m')
+end
+
+def obfuscate(text)
+  %{<script type="text/javascript">document.write(} +
+  %{"#{e_js(rot_13(text))}".replace(/[a-zA-Z]/g, function(c){return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);}));} +
+  %{</script><noscript><em>(sorry, we are protecting ourself against spam so JavaScript is required to show the email address)</em></noscript>}
+end
+
+HTML.parse(STDIN).map do |e|
+  # to_s will give only the text of the current object, i.e. <tag> for <tag>foo</tag>
+  # to_a will return the sub-tree as an array, i.e. [ <tag>, foo, </tag> ]
+  if e.to_s =~ EMAIL_PATTERN
+    STDOUT << obfuscate(e.to_a.join)
+    HTML::Node.prune = true # skip descending into current sub-tree
+  else
+    STDOUT << e.to_s
+  end
+end
