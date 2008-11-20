@@ -27,7 +27,7 @@ Dir.glob('pages/**/{*.*,.ht*}').each do |src|
 		STDOUT << "#{dst_edit}: #{src} #{TEMPLATES} bin/generate_edit\n\tbin/generate_edit < $< > $@ #{name}\n\n"
 		targets << dst_edit
 	else
-		name = File.split(src).last.sub(/\..+$/, '')
+		name = File.split(src).last.sub(/(.)\..+$/, '\1')
 		STDOUT << "\n\tcp -p $< $@\n\n"
 		dst_edit += '.html'
 		STDOUT << "#{dst_edit}: #{src} #{TEMPLATES} bin/generate_edit\n\tbin/generate_edit < $< > $@ #{name}\n\n"
